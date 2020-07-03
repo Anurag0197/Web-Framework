@@ -60,9 +60,4 @@ public class WebServer
 
     }
 
-    public static void main(String[] args) throws IOException
-    {
-        File file = new File("/home/an.kumar1/Desktop/test/out/production/test/");
-        WebServer server = new WebServer(5009,file,"Router");
-    }
 }
