@@ -51,7 +51,7 @@ public class Request implements Runnable
                 if(Arrays.asList(method.getAnnotation(Route.class).method()).contains(httpMethod))
                 {
                     method.setAccessible(true);
-                    render = (String) method.invoke(router,this);
+                    render =  method.invoke(router,this).toString();
                 }
 
                 else
