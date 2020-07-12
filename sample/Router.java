@@ -1,4 +1,7 @@
+package sample;
+
 import rendering.template.RenderTemplate;
+import routing.Method;
 import routing.Route;
 import web.server.Request;
 import web.server.WebServer;
@@ -8,12 +11,21 @@ import java.util.List;
 
 public class Router
 {
-    @Route(value = "/post" , method = "POST")
+    @Route("/")
+    public String home(Request request)
+    {
+        return "THIS IS A HOMEPAGE!!";
+    }
+
+    @Route(value = "/post" , method = Method.POST)
     public List<String> post(Request request)
     {
         List<String> data;
 
         data= request.getPostData();
+
+        for (String s : data)
+            System.out.println(s);
 
         return data;
     }
@@ -24,7 +36,7 @@ public class Router
         return RenderTemplate.render("index.html");
     }
 
-    @Route(value = "/both", method = {"GET" , "POST"})
+    @Route(value = "/both", method = {Method.POST , Method.GET})
     public String both(Request request) throws Exception
     {
         if(request.getMethod().equals("POST"))

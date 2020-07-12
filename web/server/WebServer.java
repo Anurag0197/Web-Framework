@@ -1,10 +1,7 @@
 package web.server;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.*;
-
-
 
 class RouterObject
 {
@@ -12,6 +9,11 @@ class RouterObject
 
     protected static void setRoute(File file, String className) throws MalformedURLException, ClassNotFoundException, IllegalAccessException, InstantiationException
     {
+        /** @param file -->  Path of the directory which contains the Router.class file
+         *  @param className --> Name of the class which contains the @Route annotation (EX - Router.class)
+         * */
+
+        //It is creating the object of the router's class which is written by the user
         if(router == null)
         {
             URL url = file.toURI().toURL();
@@ -24,6 +26,7 @@ class RouterObject
 
     protected static Object getRouter()
     {
+        /**  @return --> It returns the object of the Router class */
         return router;
     }
 }
@@ -31,23 +34,27 @@ class RouterObject
 
 public class WebServer
 {
-    ServerSocket ss;
-
-    public WebServer(int port , File file, String className)
+    public WebServer(int port , File file, String className)  // Web Server is continuously listening on a particular port
     {
+        /**
+         * @param port --> Port on which Server would start to listen the incoming request
+         * @param file -->  Path of the directory which contains the Router.class file
+         *  @param className --> Name of the class which contains the @Route annotation (EX - Router.class)
+         * */
+
         try
         {
             RouterObject.setRoute(file,className);
-            ss = new ServerSocket(port);
+            ServerSocket ss = new ServerSocket(port);
             System.out.println("SERVER HAS STARTED ON PORT " +  port);
 
-            while(true)
+            while(true)  // Each request is listened and assigned to a separate thread
             {
                 Socket s = ss.accept();
 
-                Request c = new Request(s);
+                Request request = new Request(s);
 
-                Thread t = new Thread(c);
+                Thread t = new Thread(request);
 
                 t.start();
             }
@@ -57,7 +64,6 @@ public class WebServer
         {
             e.printStackTrace();
         }
-
     }
 }
 

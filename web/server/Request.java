@@ -1,6 +1,7 @@
 package web.server;
 
-import http.packet.HttpPacket;
+import http.packet.RequestHttpPacket;
+import http.packet.ResponseHttpPacket;
 import routing.Route;
 
 import java.io.BufferedReader;
@@ -13,99 +14,115 @@ import java.net.SocketException;
 import java.util.Arrays;
 import java.util.List;
 
+
 public class Request implements Runnable
 {
     private final Socket s;
     private final BufferedReader socInput;
     private final DataOutputStream socOutput;
-    private final HttpPacket httpPacket;
+    private final RequestHttpPacket requestHttpPacket;
+    private final ResponseHttpPacket responseHttpPacket;
 
     protected Request(Socket s) throws IOException
     {
         this.s = s;
         this.socInput = new BufferedReader(new InputStreamReader(s.getInputStream()));
         this.socOutput = new DataOutputStream(s.getOutputStream());
-        this.httpPacket = new HttpPacket();
+        this.requestHttpPacket = new RequestHttpPacket();
+        this.responseHttpPacket = new ResponseHttpPacket();
+
+        /** @param  Socket --> Taking socket's class object corresponding to each request */
     }
+
 
     public List<String> getPostData()
     {
-        return this.httpPacket.getRequestHttpBody();    
+        return requestHttpPacket.getRequestHttpBody();
+        /**  @return --> It returns the Post's request body */
     }
 
     public String getMethod()
     {
-        return this.httpPacket.getHttpMethod();
+        return requestHttpPacket.getRequestMethod();
+        /**  @return --> It returns the HTTP request method */
     }
 
-    private String invokeRouter(String path, String httpMethod) throws Exception
+    private void invokeRouter(String path, String httpMethod) throws Exception
     {
-        String render = "";
+        /**  @param path --> Endpoint to which the request should be mapped
+         *   @param httpMethod --> HTTP request method
+         *
+         * */
+        //This method is calling the corresponding method of Router class which is written by the user
+        String response = "";
         Object router = RouterObject.getRouter();
         Method[] methods = router.getClass().getDeclaredMethods();
 
         for(Method method : methods)
         {
-            if (method.isAnnotationPresent(Route.class) && method.getAnnotation(Route.class).value().substring(1).equals(path))
+            //checking @Route annotation is present or not on a method and if present then checking the endpoint of request
+            if (method.isAnnotationPresent(Route.class) && method.getAnnotation(Route.class).value().equals(path))
             {
+                //checking the request method is allowed or not
                 if(Arrays.asList(method.getAnnotation(Route.class).method()).contains(httpMethod))
                 {
                     method.setAccessible(true);
-                    render =  method.invoke(router,this).toString();
+                    response =  method.invoke(router,this).toString();// calling the corresponding router's class method
                 }
 
                 else
                 {
-                    render = "Not Allowed";
+                    response = "Not Allowed";
                 }
 
                 break;
             }
         }
 
-        return HttpPacket.makeHttpPacket(render);
+        //This method is initializing the response http packet
+        responseHttpPacket.makeResponseHttpPacket(response);
+    }
+
+    private void getRequest()
+    {
+        //This method is initializing the request http packet and calling the invokeRouter method
+        try
+        {
+            requestHttpPacket.init(socInput);
+            String path = requestHttpPacket.getRequestHttpHeader().get(0).split(" ")[1];
+            invokeRouter(path,requestHttpPacket.getRequestMethod());
+        }
+
+        catch (Exception e)
+        {
+            responseHttpPacket.makeResponseHttpPacket("Error");
+        }
+    }
+
+    private void sendResponse() throws IOException
+    {
+        //This method method is sending response http packet to the client
+        socOutput.writeBytes(responseHttpPacket.toString());
+        socOutput.flush();
+        socOutput.close();
+        s.close();
     }
 
     @Override
     public void run()
     {
+        //  This method is called for each request and send the response to the client for each corresponding request
         try
         {
-            httpPacket.initHttpPacket(socInput);
-            String httpMethod = "GET";
-
-
-            if(httpPacket.getRequestHttpHeader().get(0).contains("POST"))
-                httpMethod = "POST";
-
-            String path = httpPacket.getRequestHttpHeader().get(0).split(" ")[1].substring(1);
-            String responseHttpPacket = invokeRouter(path,httpMethod);
-
-            socOutput.writeBytes(responseHttpPacket);
-            socOutput.flush();
-            socOutput.close();
-            s.close();
+            getRequest();
+            sendResponse();
         }
+
+        catch (SocketException ignored){}
 
         catch (Exception e)
         {
-            String httpPacket = HttpPacket.makeHttpPacket("Error");
-
-            try
-            {
-                socOutput.writeBytes(httpPacket);
-                socOutput.flush();
-                socOutput.close();
-                s.close();
-            }
-
-            catch (SocketException ignored)
-            {}
-
-            catch (IOException ioException)
-            {
-                ioException.printStackTrace();
-            }
+            e.printStackTrace();
         }
     }
 }
