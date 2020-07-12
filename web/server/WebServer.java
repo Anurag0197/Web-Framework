@@ -65,5 +65,12 @@ public class WebServer
             e.printStackTrace();
         }
     }
+
+    public static void main(String[] args)
+    {
+        File classPath = new File("/home/an.kumar1/Desktop/test/out/production/test");
+        WebServer webServer = new WebServer(5002, classPath,"Router");
+    }
+
 }
 

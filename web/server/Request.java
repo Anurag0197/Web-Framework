@@ -20,17 +20,14 @@ public class Request implements Runnable
     private final Socket s;
     private final BufferedReader socInput;
     private final DataOutputStream socOutput;
-    private final RequestHttpPacket requestHttpPacket;
-    private final ResponseHttpPacket responseHttpPacket;
+    private  RequestHttpPacket requestHttpPacket;
+    private  ResponseHttpPacket responseHttpPacket;
 
     protected Request(Socket s) throws IOException
     {
         this.s = s;
         this.socInput = new BufferedReader(new InputStreamReader(s.getInputStream()));
         this.socOutput = new DataOutputStream(s.getOutputStream());
-        this.requestHttpPacket = new RequestHttpPacket();
-        this.responseHttpPacket = new ResponseHttpPacket();
-
         /** @param  Socket --> Taking socket's class object corresponding to each request */
     }
 
@@ -80,7 +77,7 @@ public class Request implements Runnable
         }
 
         //This method is initializing the response http packet
-        responseHttpPacket.makeResponseHttpPacket(response);
+        responseHttpPacket = new ResponseHttpPacket(response,ResponseHttpPacket.ContentType.TEXT);
     }
 
     private void getRequest()
@@ -88,14 +85,14 @@ public class Request implements Runnable
         //This method is initializing the request http packet and calling the invokeRouter method
         try
         {
-            requestHttpPacket.init(socInput);
+            requestHttpPacket = new RequestHttpPacket(socInput);
             String path = requestHttpPacket.getRequestHttpHeader().get(0).split(" ")[1];
             invokeRouter(path,requestHttpPacket.getRequestMethod());
         }
 
         catch (Exception e)
         {
-            responseHttpPacket.makeResponseHttpPacket("Error");
+            responseHttpPacket = new ResponseHttpPacket("Error",ResponseHttpPacket.ContentType.TEXT);
         }
     }
 

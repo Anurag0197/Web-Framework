@@ -3,7 +3,7 @@ package http.packet;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HttpPacket
+public abstract class HttpPacket
 {
     enum HttpStatus
     {
